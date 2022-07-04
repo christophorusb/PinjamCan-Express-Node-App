@@ -29,9 +29,21 @@ const Item = mongoose.Schema({
             ref: 'ReviewData'
         }
     ],
-    MainItemPictureLocalPath : { type: String, required: true },
+    MainItemPictureLocalPath : { type: String, default: '' },
     ItemPictureLocalPaths: [
-        { type: String, required: true }
+        { type: String, default: '' }
+    ],
+    MainItemPictureURL: {
+        url: { type: String, default: '' },
+        secure_url: { type: String, default: ''},
+        public_id: { type: String, default: '' }
+    },
+    ItemPictureURLs: [
+        {
+            url: { type: String, default: '' },
+            secure_url: { type: String, default: ''},
+            public_id: { type: String, default: ''}
+        }
     ],
     ItemRatings: [ { type: Number, default:0 } ],
     ItemRatingAverage: { type: Number, default: 0 },

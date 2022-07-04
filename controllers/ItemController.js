@@ -4,6 +4,32 @@ const Item = require('../models/Item.model')
 const Order = require('../models/order.model')
 const User  = require('../models/user.model')
 const asyncHandler = require('express-async-handler')
+const cloudinary = require('../utils/cloudinary')
+
+const calculateItemRentPrices = (dailyPrice, weeklyPrice, monthlyPrice) => {
+    let calculateItemRentPerDay = parseInt(dailyPrice)
+    let calculateItemWeeklyPerDay = parseInt(weeklyPrice)
+    let calculateItemMonthlyPerDay = parseInt(monthlyPrice)
+
+    calculateItemRentPerDay = Math.floor(calculateItemRentPerDay)
+    calculateItemWeeklyPerDay = Math.floor(calculateItemWeeklyPerDay / 7)
+    calculateItemMonthlyPerDay = Math.floor(calculateItemMonthlyPerDay / 30)
+
+    const itemRentMinPrice = Math.min(
+        calculateItemRentPerDay,
+        calculateItemWeeklyPerDay,
+        calculateItemMonthlyPerDay,
+    )
+
+    const result = {
+        itemPriceDaily: calculateItemRentPerDay,
+        itemPriceWeeklyPerDay: calculateItemWeeklyPerDay,
+        itemPriceMonthlyPerDay: calculateItemMonthlyPerDay,
+        itemRentMinPrice: itemRentMinPrice,
+    }
+
+    return result
+}
 
 //@desc get item categories
 //@route GET /api/items/item-categories
@@ -125,17 +151,21 @@ const getItemsByFilter = asyncHandler(async (req, res) => {
     }
 })
 
-//@desc create new item
+//@desc create new item and STORE IMAGE IN PUBLIC FOLDER
 //@route POST /api/items
 //@access Private
-const postItem = asyncHandler(async (req, res) => {
+const postItem_imageLocal = asyncHandler(async (req, res) => {
     console.log('post item API fired')
+    const itemExist = await Item.findOne({ItemName: req.body.itemName})
+    if(itemExist){
+        return res.status(400).json({
+            statusText: 'ITEM_EXIST',
+            statusCode: 400,
+        })
+    }
     const textualData = req.body
     const files = req.files
     const user = req.user
-    //console.log(textualData)
-    // console.log(user)
-    //getting item category ID
     const thisItemCategory = await ItemCategory.findOne({Value: textualData.itemCategory})
     const thisItemCategoryId = thisItemCategory._id
 
@@ -157,66 +187,95 @@ const postItem = asyncHandler(async (req, res) => {
     }
     // console.log(thisPicturePathArr)
 
-
-    //calculate item rent price per day for weekly and monthly, 
-    //as well as comparing which price is the lowest
-    let itemRentMinPrice 
-    let calculateItemRentPerDay = parseInt(textualData.itemRentPerDay)
-    let calculateItemWeeklyPerDay = (textualData.itemRentPerWeek.length === 0) ? null : parseInt(textualData.itemRentPerWeek)
-    let calculateItemMonthlyPerDay = (textualData.itemRentPerMonth.length === 0) ? null : parseInt(textualData.itemRentPerMonth)
-
-    calculateItemRentPerDay = Math.floor(calculateItemRentPerDay)
-    if(calculateItemWeeklyPerDay !== null){
-        calculateItemWeeklyPerDay = Math.floor(calculateItemWeeklyPerDay / 7)
-    }
-
-    if(calculateItemMonthlyPerDay !== null){
-        calculateItemMonthlyPerDay = Math.floor(calculateItemMonthlyPerDay / 30)
-    }
-    //if weekly price field is empty
-    if(calculateItemWeeklyPerDay === null){
-        itemRentMinPrice = Math.min(
-            calculateItemRentPerDay,
-            calculateItemMonthlyPerDay,
-        )
-    }
-
-    //if monthly price field is empty
-    if(calculateItemMonthlyPerDay === null){
-        itemRentMinPrice = Math.min(
-            calculateItemRentPerDay,
-            calculateItemWeeklyPerDay,
-        )
-    }
-
-    //if both weekly and monthly price fields are empty
-    if(calculateItemWeeklyPerDay === null && calculateItemMonthlyPerDay === null){
-        itemRentMinPrice = calculateItemRentPerDay
-    }
-
-    //if both weekly and monthly price fields are not empty
-    if(calculateItemWeeklyPerDay !== null && calculateItemMonthlyPerDay !== null){
-        itemRentMinPrice = Math.min(
-            calculateItemRentPerDay,
-            calculateItemWeeklyPerDay,
-            calculateItemMonthlyPerDay,
-        )
-    }
+    const calculatedPrices = calculateItemRentPrices(
+        textualData.productRentPerDay, 
+        textualData.productRentPerWeek, 
+        textualData.productRentPerMonth
+    )
 
     Item.create({
         ItemName: textualData.itemName,
         ItemDescription: textualData.itemDescription,
         ItemCategory: thisItemCategoryId,
-        ItemPriceDaily: calculateItemRentPerDay,
-        ItemPriceWeeklyPerDay: calculateItemWeeklyPerDay,
-        ItemPriceMonthlyPerDay: calculateItemMonthlyPerDay,
-        ItemPriceDailyMinimum: itemRentMinPrice,
+        ItemPriceDaily: calculatedPrices.itemPriceDaily,
+        ItemPriceWeeklyPerDay: calculatedPrices.itemPriceWeeklyPerDay,
+        ItemPriceMonthlyPerDay: calculatedPrices.itemPriceMonthlyPerDay,
+        ItemPriceDailyMinimum: calculatedPrices.itemRentMinPrice,
         ItemMinimumRentDuration: textualData.itemMinimumRentDuration,
         ItemWeight: textualData.itemWeight,
         ItemStatus: 'Available',
         ItemDeliveryOptions: thisDeliveryOptionIdArr,
         MainItemPictureLocalPath : mainPicturePath,
         ItemPictureLocalPaths: thisPicturePathArr,
+        ItemCreatedAt: Date.now(),
+        ItemCreatedBy:{
+            user: req.user.userFullName,
+            userId: req.user.id
+        }
+    }).then(() => {
+        return res.status(201).json({
+            status: 'success',
+            message: 'Item created',
+            statusCode: 201,
+        })
+    })
+})
+
+//@desc create new item and also STORE IMAGE IN CLOUDINARY
+//@route POST /api/items
+//@access Private
+const postItem_imageCloud = asyncHandler(async (req, res) => {
+    console.log('postItemToCloud API fired')
+    const itemExist = await Item.findOne({ItemName: req.body.itemName})
+    if(itemExist){
+        return res.status(400).json({
+            statusText: 'ITEM_EXIST',
+            statusCode: 400,
+        })
+    }
+    const newItemDataRequest = req.body
+    const thisItemCategory = await ItemCategory.findOne({Value: newItemDataRequest.itemCategory})
+    const thisItemCategoryId = thisItemCategory._id
+    const thisDeliveryOptionArr = newItemDataRequest.deliveryOptions
+    const itemPictures = newItemDataRequest.itemPictures
+    const thisDeliveryOptionIdArr = await Promise.all(thisDeliveryOptionArr.map(async (deliveryOption) => {
+        const thisDeliveryOption = await DeliveryOption.findOne({Value: deliveryOption})
+        return thisDeliveryOption._id
+    }))
+
+    const cloudinary_upload_response = await Promise.all(itemPictures.map(async (picture) => {
+        const result = await cloudinary.uploader.upload(picture.url, {public_id: picture.name, folder: '/image_user_uploads'})
+        return result
+    }))
+
+    let pictureURLs = []
+
+    cloudinary_upload_response.forEach(response => {
+        const obj = { url: response.url, secure_url: response.secure_url, public_id: response.public_id }
+        pictureURLs.push(obj)
+    })
+
+
+    const calculatedPrices = calculateItemRentPrices(
+                                newItemDataRequest.productRentPerDay, 
+                                newItemDataRequest.productRentPerWeek, 
+                                newItemDataRequest.productRentPerMonth
+                            )
+
+    Item.create({
+        ItemName: newItemDataRequest.itemName,
+        ItemDescription: newItemDataRequest.itemDescription,
+        ItemCategory: thisItemCategoryId,
+        ItemPriceDaily: calculatedPrices.itemPriceDaily,
+        ItemPriceWeeklyPerDay: calculatedPrices.itemPriceWeeklyPerDay,
+        ItemPriceMonthlyPerDay: calculatedPrices.itemPriceMonthlyPerDay,
+        ItemPriceDailyMinimum: calculatedPrices.itemRentMinPrice,
+        ItemMinimumRentDuration: newItemDataRequest.itemMinimumRentDuration,
+        ItemWeight: newItemDataRequest.itemWeight,
+        ItemStatus: 'Available',
+        ItemDeliveryOptions: thisDeliveryOptionIdArr,
+        MainItemPictureURL : pictureURLs[0],
+        ItemPictureURLs: pictureURLs,
         ItemCreatedAt: Date.now(),
         ItemCreatedBy:{
             user: req.user.userFullName,
@@ -417,20 +476,12 @@ const getItemsByUserId = asyncHandler(async (req, res) => {
 
 })
 
-const editItem = asyncHandler(async (req, res) => {
+const editItem_imageLocal = asyncHandler(async (req, res) => {
     console.log('editItem API Called')
     const itemId = req.params.itemId
     const textualData = req.body
     const user = req.user
     const files = req.files
-
-    // console.log('TEXT DATA')
-    // console.log('==================================================')
-    // console.log(textualData)
-
-    // console.log('FILE DATA')
-    // console.log('==================================================')
-    // console.log(files)
 
     const thisItemCategory = await ItemCategory.findOne({Value: textualData.itemCategory})
     const thisItemCategoryId = thisItemCategory._id
@@ -451,48 +502,12 @@ const editItem = asyncHandler(async (req, res) => {
         thisPicturePathArr.push('/image_uploads/' + files[i].filename)
     }
 
-    let itemRentMinPrice 
-    let calculateItemRentPerDay = parseInt(textualData.itemRentPerDay)
-    let calculateItemWeeklyPerDay = (textualData.itemRentPerWeek.length === 0) ? null : parseInt(textualData.itemRentPerWeek)
-    let calculateItemMonthlyPerDay = (textualData.itemRentPerMonth.length === 0) ? null : parseInt(textualData.itemRentPerMonth)
+    const calculatedPrices = calculateItemRentPrices(
+        textualData.productRentPerDay, 
+        textualData.productRentPerWeek, 
+        textualData.productRentPerMonth
+    )
 
-    calculateItemRentPerDay = Math.floor(calculateItemRentPerDay)
-    if(calculateItemWeeklyPerDay !== null){
-        calculateItemWeeklyPerDay = Math.floor(calculateItemWeeklyPerDay / 7)
-    }
-
-    if(calculateItemMonthlyPerDay !== null){
-        calculateItemMonthlyPerDay = Math.floor(calculateItemMonthlyPerDay / 30)
-    }
-    //if weekly price field is empty
-    if(calculateItemWeeklyPerDay === null){
-        itemRentMinPrice = Math.min(
-            calculateItemRentPerDay,
-            calculateItemMonthlyPerDay,
-        )
-    }
-
-    //if monthly price field is empty
-    if(calculateItemMonthlyPerDay === null){
-        itemRentMinPrice = Math.min(
-            calculateItemRentPerDay,
-            calculateItemWeeklyPerDay,
-        )
-    }
-
-    //if both weekly and monthly price fields are empty
-    if(calculateItemWeeklyPerDay === null && calculateItemMonthlyPerDay === null){
-        itemRentMinPrice = calculateItemRentPerDay
-    }
-
-    //if both weekly and monthly price fields are not empty
-    if(calculateItemWeeklyPerDay !== null && calculateItemMonthlyPerDay !== null){
-        itemRentMinPrice = Math.min(
-            calculateItemRentPerDay,
-            calculateItemWeeklyPerDay,
-            calculateItemMonthlyPerDay,
-        )
-    }
     await Item.updateOne({
         _id: itemId
     }, {
@@ -501,10 +516,10 @@ const editItem = asyncHandler(async (req, res) => {
             ItemDescription: textualData.itemDescription,
             ItemCategory: thisItemCategoryId,
             ItemDeliveryOptions: thisDeliveryOptionsIdArr,
-            ItemPriceDaily: calculateItemRentPerDay,
-            ItemPriceWeeklyPerDay: calculateItemWeeklyPerDay,
-            ItemPriceMonthlyPerDay: calculateItemMonthlyPerDay,
-            ItemPriceDailyMinimum: itemRentMinPrice,
+            ItemPriceDaily: calculatedPrices.itemPriceDaily,
+            ItemPriceWeeklyPerDay: calculatedPrices.itemPriceWeeklyPerDay,
+            ItemPriceMonthlyPerDay: calculatedPrices.itemPriceMonthlyPerDay,
+            ItemPriceDailyMinimum: calculatedPrices.itemRentMinPrice,
             ItemMinimumRentDuration: textualData.itemMinimumRentDuration,
             ItemWeight: textualData.itemWeight,
             ItemPictureLocalPaths: thisPicturePathArr,
@@ -517,6 +532,114 @@ const editItem = asyncHandler(async (req, res) => {
             statusText: 'ITEM_UPDATED',
             statusCode: 200,
         })
+    })
+})
+
+const editItem_imageCloud = asyncHandler(async (req, res) => {
+    console.log('editItem_imageCloud API Called')
+    const itemId = req.params.itemId
+    const itemDataToBeUpdated = req.body
+
+    const thisItemCategory = await ItemCategory.findOne({Value: itemDataToBeUpdated.itemCategory})
+    const thisItemCategoryId = thisItemCategory._id
+
+    const thisDeliveryOptionArr = itemDataToBeUpdated.itemDeliveryOptions
+
+    const thisDeliveryOptionsIdArr = await Promise.all(thisDeliveryOptionArr.map(async (deliveryOption) => {
+        const thisDeliveryOption = await DeliveryOption.findOne({Value: deliveryOption})
+        return thisDeliveryOption._id
+    }))
+
+    const calculatedPrices = calculateItemRentPrices(
+        itemDataToBeUpdated.productRentPerDay, 
+        itemDataToBeUpdated.productRentPerWeek, 
+        itemDataToBeUpdated.productRentPerMonth
+    )
+
+    //itemDataToBeUpdated.itemPictures --> array gambar baru yg di tambah
+    //itemDataToBeUpdated.imagesToBeDeleted.URLs --> array URLs gambar yg udah ada, yg di apus
+    //itemDataToBeUpdated.imagesToBeDeleted.public_ids --> array public id gambar yg udah ada, yg di apus
+     
+    //if there are new pictures to be added
+    if(itemDataToBeUpdated.itemPictures !== null){
+        console.log('there are new pictures to be added..')
+        //check if there are existing images that need deletion
+        if(itemDataToBeUpdated.imagesToBeDeleted.public_ids.length !== 0 && itemDataToBeUpdated.imagesToBeDeleted.URLs.length !== 0){
+            //remove image from cloudinary
+            console.log('there are images to be deleted..')
+            console.log(itemDataToBeUpdated.imagesToBeDeleted.URLs)
+            const cloudinary_delete_response = await cloudinary.api.delete_resources(itemDataToBeUpdated.imagesToBeDeleted.public_ids)
+            //remove image from url array in item model
+            await Item.updateOne({_id: itemId}, { $pull: { "ItemPictureURLs":{ "secure_url":{ $in: itemDataToBeUpdated.imagesToBeDeleted.URLs } } } })
+            //await Item.updateOne({ _id: itemId }, { $pull: { 'ItemPictureURLs.$.secure_url': { $in: itemDataToBeUpdated.imagesToBeDeleted.URLs } } })
+        }
+        let pictureURLs = []
+        const cloudinary_upload_response = await Promise.all(itemDataToBeUpdated.itemPictures.map(async (picture) => {
+            const result = await cloudinary.uploader.upload(picture.img_base64, {public_id: picture.img_name, folder: '/image_user_uploads'})
+            return result
+        }))
+
+        cloudinary_upload_response.forEach(response => {
+            const obj = { url: response.url, secure_url: response.secure_url, public_id: response.public_id }
+            pictureURLs.push(obj)
+        })
+
+        await Item.updateOne({
+            _id: itemId
+        }, {
+            $set: {
+                ItemName: itemDataToBeUpdated.itemName,
+                ItemDescription: itemDataToBeUpdated.itemDescription,
+                ItemCategory: thisItemCategoryId,
+                ItemDeliveryOptions: thisDeliveryOptionsIdArr,
+                ItemPriceDaily: calculatedPrices.itemPriceDaily,
+                ItemPriceWeeklyPerDay: calculatedPrices.itemPriceWeeklyPerDay,
+                ItemPriceMonthlyPerDay: calculatedPrices.itemPriceMonthlyPerDay,
+                ItemPriceDailyMinimum: calculatedPrices.itemRentMinPrice,
+                ItemMinimumRentDuration: itemDataToBeUpdated.itemMinimumRentDuration,
+                ItemWeight: itemDataToBeUpdated.itemWeight,
+                ItemModifiedDate: Date.now()
+            },
+            $push: {
+                ItemPictureURLs: pictureURLs,
+            }
+        })
+    }
+    //if there are no pictures to be added
+    else{
+        //check if there are existing images that need deletion
+        console.log('there are no new pictures to be added..')
+        if(itemDataToBeUpdated.imagesToBeDeleted.public_ids.length !== 0 && itemDataToBeUpdated.imagesToBeDeleted.URLs.length !== 0){
+            console.log('there are images to be deleted..')
+            console.log(itemDataToBeUpdated.imagesToBeDeleted.URLs)
+            //remove image from cloudinary
+            const cloudinary_delete_response = await cloudinary.api.delete_resources(itemDataToBeUpdated.imagesToBeDeleted.public_ids)
+            //remove image from url array in item model
+            await Item.updateOne({_id: itemId}, { $pull: { "ItemPictureURLs":{ "secure_url":{ $in: itemDataToBeUpdated.imagesToBeDeleted.URLs } } } })
+            //await Item.updateOne({ _id: itemId }, { $pull: { 'ItemPictureURLs.$.secure_url': { $in: itemDataToBeUpdated.imagesToBeDeleted.URLs } } })
+        }
+        await Item.updateOne({
+            _id: itemId
+        }, {
+            $set: {
+                ItemName: itemDataToBeUpdated.itemName,
+                ItemDescription: itemDataToBeUpdated.itemDescription,
+                ItemCategory: thisItemCategoryId,
+                ItemDeliveryOptions: thisDeliveryOptionsIdArr,
+                ItemPriceDaily: calculatedPrices.itemPriceDaily,
+                ItemPriceWeeklyPerDay: calculatedPrices.itemPriceWeeklyPerDay,
+                ItemPriceMonthlyPerDay: calculatedPrices.itemPriceMonthlyPerDay,
+                ItemPriceDailyMinimum: calculatedPrices.itemRentMinPrice,
+                ItemMinimumRentDuration: itemDataToBeUpdated.itemMinimumRentDuration,
+                ItemWeight: itemDataToBeUpdated.itemWeight,
+                ItemModifiedDate: Date.now()
+            }
+        })
+    }
+
+    return res.status(200).json({
+        statusText: 'ITEM_UPDATED',
+        statusCode: 200,
     })
 })
 
@@ -544,7 +667,9 @@ module.exports = {
     getItemsByFilter,
     getSearchedItemsByFilter,
     getItemsByUserId,
-    postItem,
-    editItem,
+    postItem_imageLocal,
+    postItem_imageCloud,
+    editItem_imageLocal,
+    editItem_imageCloud,
     deleteItem
 }

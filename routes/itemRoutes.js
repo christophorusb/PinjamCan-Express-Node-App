@@ -9,8 +9,10 @@ const { getItems,
     getHomeItemsData,
     getItemsByFilter , 
     getSearchedItemsByFilter, 
-    getItemsByUserId, postItem, 
-    editItem, deleteItem } = require('../controllers/ItemController')
+    getItemsByUserId, postItem_imageLocal,
+    postItem_imageCloud, 
+    editItem_imageLocal, editItem_imageCloud,
+    deleteItem } = require('../controllers/ItemController')
 const Item = require('../models/Item.model')
 
 const fileStorageEngine = multer.diskStorage({
@@ -50,10 +52,12 @@ router.get('/home', getHomeItemsData)
 router.get('/filter', getItemsByFilter)
 router.get('/owner', protect, getItemsByUserId)
 router.get('/:itemId', getItemById)
-router.put('/:itemId', protect, upload_update.any(), editItem)
+router.put('/image-local/:itemId', protect, upload_update.any(), editItem_imageLocal)
+router.put('/image-cloudinary/:itemId', protect, editItem_imageCloud)
 router.delete('/:itemId', protect, deleteItem)
 router.get('/', getItems)
-router.post('/', protect, upload.any(), checkItemExist, postItem)
+router.post('/image-local', protect, upload.any(), checkItemExist, postItem_imageLocal)
+router.post('/image-cloudinary', protect, postItem_imageCloud)
 
 
 module.exports = router

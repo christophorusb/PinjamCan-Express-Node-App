@@ -34,12 +34,19 @@ const addReview = asyncHandler(async (req, res, next) => {
 
     //add review id and push item rating to Item Model
     const updatedItem = await Item.findOneAndUpdate({ _id: itemRef }, { $push: { ItemReviews: review._id,  ItemRatings: review.ItemStarsReceived} }, {returnDocument: 'after'})
-    let avg
-    let sum
+    console.log('UPDATED ITEMS')
+    console.log(updatedItem)
+    let avg = 0
+    let sum = 0
     for(let i=0; i<updatedItem.ItemRatings.length; i++){
+        console.log(`item rating ${updatedItem.ItemRatings[i]}`)
+        console.log(`i ${i}`)
         sum += updatedItem.ItemRatings[i]
+        console.log(`sum ${sum}`)
     }
     avg = sum / updatedItem.ItemRatings.length
+    console.log(`sum ${sum}`)
+    console.log(`avg ${avg}`)
 
     await Item.updateOne({ _id: itemRef }, { $set: { ItemRatingAverage: avg } })
     
