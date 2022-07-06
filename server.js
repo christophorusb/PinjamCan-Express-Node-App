@@ -44,7 +44,7 @@ app.get('/testroute', (req, res) =>{
 })
 
 app.get('/', (req, res) => {
-   res.status(200).json({message: 'Welcome to PinjamCan'})
+   res.send('Welcome to pinjamcan')
 })
 app.use('/api/users', require('./routes/userRoutes'))
 app.use('/api/items', require('./routes/itemRoutes'))
