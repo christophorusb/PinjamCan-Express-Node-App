@@ -122,7 +122,7 @@ const sendRecoveryEmail = asyncHandler(async (req, res) => {
         from: 'Pinjam.can@gmail.com',
         to: user.userEmail,
         subject: 'Reset Password',
-        html: `<p><strong>Klik link dibawah ini untuk reset password kamu. Link ini tidak akan bisa di akses lagi setelah 30 menit!<strong></p><br><a href="http://localhost:3000/reset-password/create-new-password/${resetPasswordToken}">Link Reset Password</a>`
+        html: `<p><strong>Klik link dibawah ini untuk reset password kamu. Link ini tidak akan bisa di akses lagi setelah 30 menit!<strong></p><br><a href="https://pinjamcan.netlify.app/reset-password/create-new-password/${resetPasswordToken}">Link Reset Password</a>`
     }
 
     transporter.sendMail(options, function(err, info){

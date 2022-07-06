@@ -39,14 +39,14 @@ const addReview = asyncHandler(async (req, res, next) => {
     let avg = 0
     let sum = 0
     for(let i=0; i<updatedItem.ItemRatings.length; i++){
-        console.log(`item rating ${updatedItem.ItemRatings[i]}`)
-        console.log(`i ${i}`)
+        // console.log(`item rating ${updatedItem.ItemRatings[i]}`)
+        // console.log(`i ${i}`)
         sum += updatedItem.ItemRatings[i]
-        console.log(`sum ${sum}`)
+        // console.log(`sum ${sum}`)
     }
     avg = sum / updatedItem.ItemRatings.length
-    console.log(`sum ${sum}`)
-    console.log(`avg ${avg}`)
+    // console.log(`sum ${sum}`)
+    // console.log(`avg ${avg}`)
 
     await Item.updateOne({ _id: itemRef }, { $set: { ItemRatingAverage: avg } })
     
