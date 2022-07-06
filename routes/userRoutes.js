@@ -8,7 +8,7 @@ const { registerUser,
     verifyResetToken,
     createNewPassword,
     updateUserInfo,
-    getUserInfo, } = require('../controllers/userController')
+    getUserInfo, } = require('../controllers/UserController')
 const { protect } = require('../authMiddleware.js')
 
 router.get('/profile', protect, getUserInfo)
