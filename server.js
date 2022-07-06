@@ -43,6 +43,9 @@ app.get('/testroute', (req, res) =>{
     res.json({message: 'test route works'})
 })
 
+app.get('/', (req, res) => {
+   res.status(200).json({message: 'Welcome to PinjamCan'})
+})
 app.use('/api/users', require('./routes/userRoutes'))
 app.use('/api/items', require('./routes/itemRoutes'))
 app.use('/api/wishlist', require('./routes/wishListRoutes'))
