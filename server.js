@@ -19,7 +19,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const app = express();
-
+const port = process.env.PORT || 5000
 app.use(express.json({limit: '50mb'}))
 app.use(express.urlencoded({extended: true}))
 
@@ -32,7 +32,7 @@ app.use(cors({
 
 mongoose.connect('mongodb://pinjam_can:FyK3MABCFCNWbiHF@pinjamcluster-shard-00-00.gdsyv.mongodb.net:27017,pinjamcluster-shard-00-01.gdsyv.mongodb.net:27017,pinjamcluster-shard-00-02.gdsyv.mongodb.net:27017/PinjamCan?ssl=true&replicaSet=atlas-per5as-shard-0&authSource=admin&retryWrites=true&w=majority')
         .then(()=> {
-            app.listen(5000, () => console.log('Server is listening on port 5000, MongoDB Atlas Connected'));
+            app.listen(port, () => console.log(`Server is listening on ${port}, MongoDB Atlas Connected`));
         })
         .catch(err => {
             console.log(err);
