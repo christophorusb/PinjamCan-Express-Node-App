@@ -13,20 +13,19 @@ const registerUser = asyncHandler(async (req, res) =>{
     const userEmail = req.body.userEmail
     const userPassword = req.body.dataRequest.userPassword
     const userFullName = req.body.dataRequest.userFullName
-    const userNIK = req.body.dataRequest.userNIK
     const userPhoneNumber = req.body.dataRequest.userPhoneNumber
     const userAddress = req.body.dataRequest.userAddress
+    //const userNIK = req.body.dataRequest.userNIK
 
     console.log(userEmail)
 
-    if(!userEmail || !userPassword || !userFullName || !userNIK || !userPhoneNumber){
+    if(!userEmail || !userPassword || !userFullName || !userPhoneNumber || !userAddress){
         console.log('one of credentials is missing')
         return res.status(400).json({ statusText: 'USER_DATA_INCOMPLETE', message: 'Data harus diisi!' })
     } 
 
     const hashedPassword = await bcrypt.hash(userPassword, 10)
 
-    //check if user exists
     const userExists = await User.findOne({ userEmail })
     if(userExists){
         console.log('user already exists')
@@ -34,7 +33,6 @@ const registerUser = asyncHandler(async (req, res) =>{
     }
 
     console.log('creating user...')
-    //Create user into database
     const user = await User.create({
         userFullName: userFullName,
         userEmail: userEmail,
@@ -55,11 +53,9 @@ const registerUser = asyncHandler(async (req, res) =>{
             })
         }
     })
-    console.log('new user pushed to database')
-
-    console.log(user)
 
     if(user){
+        console.log('new user pushed to database!')
         return res.status(200).json({
             _id: user.id,
             userFullName: user.userFullName,
