@@ -10,7 +10,6 @@ const { v4: uuidv4 } = require('uuid')
 //@access Public
 const registerUser = asyncHandler(async (req, res) =>{
     console.log('register user API fired')
-    console.log(req.body)
     const userEmail = req.body.userEmail
     const userPassword = req.body.dataRequest.userPassword
     const userFullName = req.body.dataRequest.userFullName
@@ -21,6 +20,7 @@ const registerUser = asyncHandler(async (req, res) =>{
     console.log(userEmail)
 
     if(!userEmail || !userPassword || !userFullName || !userNIK || !userPhoneNumber){
+        console.log('one of credentials is missing')
         return res.status(400).json({ statusText: 'USER_DATA_INCOMPLETE', message: 'Data harus diisi!' })
     } 
 
@@ -29,9 +29,11 @@ const registerUser = asyncHandler(async (req, res) =>{
     //check if user exists
     const userExists = await User.findOne({ userEmail })
     if(userExists){
+        console.log('user already exists')
         return res.status(400).json({ statusText: 'USER_EXIST', message: 'User sudah terdaftar!' })
     }
 
+    console.log('creating user...')
     //Create user into database
     const user = await User.create({
         userFullName: userFullName,
