@@ -163,7 +163,7 @@ const handlePendingPayment = asyncHandler(async (req, res) => {
             "bca_klikpay",
         ],
         "callbacks": {
-            "finish": "http://localhost:3000/payment-notification",
+            "finish": `${process.env.URL_TO_FRONTEND}/payment-notification`,
         }
     }
 
