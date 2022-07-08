@@ -38,14 +38,15 @@ const registerUser = asyncHandler(async (req, res) =>{
         userEmail: userEmail,
         userPassword: hashedPassword,
         userOriginalPasswordLength: userPassword.length,
-        //userNIK: userNIK,
         userPhoneNumber: '+62' + userPhoneNumber,
         userAddress: userAddress,
     }).then(createdUser => {
         return createdUser
     }).catch(err => {
+        console.log(err)
         if(err.code === 11000 && err.name === 'MongoServerError'){ //duplicate key error
             const duplicateKey = Object.keys(err.keyValue)
+            console.log('DUPLICATE FIRED')
             return res.status(400).json({ 
                 statusText: 'USER_DATA_DUPLICATE', 
                 statusCode: 400,
@@ -73,7 +74,6 @@ const loginUser = asyncHandler(async (req, res) =>{
     console.log(userEmail)
     
     const user = await User.findOne({userEmail})
-
     console.log(user)
 
     if(user && await bcrypt.compare(userPassword, user.userPassword)){
