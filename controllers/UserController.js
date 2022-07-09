@@ -146,23 +146,30 @@ const sendRecoveryEmail = asyncHandler(async (req, res) => {
 const verifyResetToken = asyncHandler(async (req, res) => {
     console.log('verify reset token API fired')
     const resetToken = req.params.resetToken
-    jwt.verify(resetToken, process.env.JWT_SECRET, async (err, decoded) => {
-        if(err){
-            if(err.name === 'TokenExpiredError'){
-                return res.status(400).json({ 
-                    statusText: 'PASSWORD_RESET_TOKEN_EXPIRED', 
-                    statusCode: 400 
-                })
+    const resetTokenFromDB = await User.findOne({resetPasswordToken: resetToken})
+    
+    if(!resetTokenFromDB){
+        return res.status(400).json({ statusText: 'PASSWORD_RESET_TOKEN_INVALID', statusCode: 400 })
+    }
+    else{
+        jwt.verify(resetToken, process.env.JWT_SECRET, async (err, decoded) => {
+            if(err){
+                if(err.name === 'TokenExpiredError'){
+                    return res.status(400).json({ 
+                        statusText: 'PASSWORD_RESET_TOKEN_EXPIRED', 
+                        statusCode: 400 
+                    })
+                }
             }
-        }
-        console.log('resetPassword jwt token payload')
-        console.log(decoded)
-        return res.status(200).json({
-            statusText: 'PASSWORD_RESET_TOKEN_VERIFIED',
-            statusCode: 200,
-            payloadResponse: decoded,
+            console.log('resetPassword jwt token payload')
+            console.log(decoded)
+            return res.status(200).json({
+                statusText: 'PASSWORD_RESET_TOKEN_VERIFIED',
+                statusCode: 200,
+                payloadResponse: decoded,
+            })
         })
-    })
+    }
 })
 
 //@desc Process password reset
