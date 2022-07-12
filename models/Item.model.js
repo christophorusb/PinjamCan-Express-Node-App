@@ -11,8 +11,10 @@ const Item = mongoose.Schema({
         }
     ,
     ItemPriceDaily: { type: Number, required: true },
-    ItemPriceWeeklyPerDay: { type: Number, default: null },
-    ItemPriceMonthlyPerDay: { type: Number, default: null },
+    ItemWeeklyPriceOriginal: { type: Number, default: 0 },
+    ItemMonthlyPriceOriginal: { type: Number, default: 0 },
+    ItemPriceWeeklyPerDay: { type: Number, default: 0 },
+    ItemPriceMonthlyPerDay: { type: Number, default: 0 },
     ItemPriceDailyMinimum: { type: Number, required: true },
     ItemMinimumRentDuration: { type: Number, required: true },
     ItemWeight: { type: Number, required: true },

@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 const Transaction = mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'UserData', required: true },
     OrderId: { type: String, default: null }, 
-    TransactionId: { type: String, default: null },
+    TransactionId: { type: String, default: ''},
     OrderedItems: [{ 
         ItemBorrowDate: [{ type: String, required: true }],
         ItemBorrowPrice: { type: Number, required: true },
@@ -13,8 +13,8 @@ const Transaction = mongoose.Schema({
     }],
     // SelectedDeliveryOptions: { type: mongoose.Schema.Types.Mixed, required: true }, 
     TransactionToken: { type: String, required: true }, //provided by midtrans
-    TransactionStatus: { type: String, default: null },//provided by midtrans
-    PaymentDetail: { type: mongoose.Schema.Types.Mixed, default: null }, 
+    TransactionStatus: { type: String, default: '' },//provided by midtrans
+    PaymentDetail: { type: mongoose.Schema.Types.Mixed, default: {} }, 
 },
     { collection: 'transaction-data' }
 )

@@ -96,6 +96,7 @@ const handlePayment = asyncHandler(async (req, res) => {
         console.log(transactionResponse)
         return transactionResponse
     }).then(transactionFirstPass => {
+        console.log(transactionFirstPass)
         const createdTransaction = 
             Transaction.create({
                 user: userId,

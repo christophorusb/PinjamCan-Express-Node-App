@@ -248,6 +248,8 @@ const postItem_imageCloud = asyncHandler(async (req, res) => {
         return result
     }))
 
+    console.log(cloudinary_upload_response)
+
     let pictureURLs = []
 
     cloudinary_upload_response.forEach(response => {
@@ -266,6 +268,8 @@ const postItem_imageCloud = asyncHandler(async (req, res) => {
         ItemName: newItemDataRequest.itemName,
         ItemDescription: newItemDataRequest.itemDescription,
         ItemCategory: thisItemCategoryId,
+        ItemWeeklyPriceOriginal: newItemDataRequest.productRentPerWeek,
+        ItemMonthlyPriceOriginal: newItemDataRequest.productRentPerMonth,
         ItemPriceDaily: calculatedPrices.itemPriceDaily,
         ItemPriceWeeklyPerDay: calculatedPrices.itemPriceWeeklyPerDay,
         ItemPriceMonthlyPerDay: calculatedPrices.itemPriceMonthlyPerDay,
@@ -592,12 +596,15 @@ const editItem_imageCloud = asyncHandler(async (req, res) => {
                 ItemDescription: itemDataToBeUpdated.itemDescription,
                 ItemCategory: thisItemCategoryId,
                 ItemDeliveryOptions: thisDeliveryOptionsIdArr,
+                ItemWeeklyPriceOriginal: itemDataToBeUpdated.productRentPerWeek,
+                ItemMonthlyPriceOriginal: itemDataToBeUpdated.productRentPerMonth,
                 ItemPriceDaily: calculatedPrices.itemPriceDaily,
                 ItemPriceWeeklyPerDay: calculatedPrices.itemPriceWeeklyPerDay,
                 ItemPriceMonthlyPerDay: calculatedPrices.itemPriceMonthlyPerDay,
                 ItemPriceDailyMinimum: calculatedPrices.itemRentMinPrice,
                 ItemMinimumRentDuration: itemDataToBeUpdated.itemMinimumRentDuration,
                 ItemWeight: itemDataToBeUpdated.itemWeight,
+                MainItemPictureURL: pictureURLs[0], 
                 ItemModifiedDate: Date.now()
             },
             $push: {
@@ -626,6 +633,8 @@ const editItem_imageCloud = asyncHandler(async (req, res) => {
                 ItemDescription: itemDataToBeUpdated.itemDescription,
                 ItemCategory: thisItemCategoryId,
                 ItemDeliveryOptions: thisDeliveryOptionsIdArr,
+                ItemWeeklyPriceOriginal: itemDataToBeUpdated.productRentPerWeek,
+                ItemMonthlyPriceOriginal: itemDataToBeUpdated.productRentPerMonth,
                 ItemPriceDaily: calculatedPrices.itemPriceDaily,
                 ItemPriceWeeklyPerDay: calculatedPrices.itemPriceWeeklyPerDay,
                 ItemPriceMonthlyPerDay: calculatedPrices.itemPriceMonthlyPerDay,
