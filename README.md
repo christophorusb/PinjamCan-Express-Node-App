@@ -1,5 +1,4 @@
 # PinjamCan-Express-Node-App
-PinjamCan Backend
 PinjamCan is a hobby-focused, Indonesian C2C rental marketplace web application built with the MERN technology stack.
 
 ## Some pre-requisites
