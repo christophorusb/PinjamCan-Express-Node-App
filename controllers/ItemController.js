@@ -362,16 +362,17 @@ const getSearchedItemsByFilter = asyncHandler(async (req, res) => {
     const itemCategory = await ItemCategory.findById(parsedQueries.ItemCategory)
 
     let keyword = req.params.searchKeyword
-    keyword = keyword.replaceAll('-', ' ')
-    //console.log('keyword: ' + keyword)
+    keyword = keyword.replaceAll('-', ' ').replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    //keyword = keyword.replaceAll(/\s+/g, ' ')
+    console.log('keyword: ' + keyword)
     let regexInsensitiveContainsSubstring = new RegExp(keyword, 'i')
-    //console.log(searchTerm)
+    console.log('search term: ' + regexInsensitiveContainsSubstring)
     
     //checking if URL params exist
     if(Object.keys(parsedQueries).length !== 0){
         searchedItemsByKeyword = await Item.find({
             ...parsedQueries,
-            ItemName: { $regex: regexInsensitiveContainsSubstring }
+            ItemName: { $regex: keyword, $options: 'i' },
         })
         console.log('searched items by query')
         //console.log(searchedItemsByKeyword)
