@@ -50,7 +50,7 @@ const handleAcceptedOrder = asyncHandler(async (req, res, next) => {
     const user = req.user
     const orderId = req.params.orderId
 
-    const order = await Order.findOneAndUpdate({ _id: orderId }, { $set: { OrderStatus: 'PEMILIK SUDAH KONFIRMASI', OrderStatus_Owner: 'PESANAN DITERIMA' } })
+    const order = await Order.findOneAndUpdate({ _id: orderId }, { $set: { OrderStatus: 'PEMILIK SUDAH KONFIRMASI', OrderStatus_Owner: 'PESANAN DITERIMA' }})
 
     return res.status(200).json({
         statusText: 'ORDER_ACCEPTED',

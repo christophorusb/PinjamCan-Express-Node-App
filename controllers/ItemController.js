@@ -438,7 +438,6 @@ const getItemsByUserId = asyncHandler(async (req, res) => {
     const user = req.user
     const items = await Item.find({'ItemCreatedBy.userId': user.id}).populate('ItemCategory').populate('ItemDeliveryOptions')
     
-
     if (items) {
         const itemsWithOrders = await Promise.all(items.map(async (item) => {
             let incomingOrders = await Order.find({

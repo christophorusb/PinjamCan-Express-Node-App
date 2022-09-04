@@ -1,18 +1,4 @@
 
-// console.log(process.env.JWT_SECRET)
-//const bodyParser = require('body-parser');
-//const User = require('./models/user.model');
-//const bcrypt = require('bcrypt')
-// app.use(express.json())
-//  app.use(multer().any())
-// app.use(cors())
-// app.use((req, res, next) => {    
-//     res.setHeader('Access-Control-Allow-Origin', '*');    
-//     res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST, PUT, PATCH, DELETE');    
-//     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');    
-//     next();
-// });
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -23,7 +9,6 @@ const port = process.env.PORT || 5000
 app.use(express.json({limit: '50mb'}))
 app.use(express.urlencoded({extended: true}))
 
-
 app.use(cors({
     origin: ['https://pinjamcan.netlify.app', 'http://localhost:3000'],
     methods:'GET,POST,PUT,DELETE',
@@ -32,7 +17,7 @@ app.use(cors({
 
 mongoose.connect('mongodb://pinjam_can:FyK3MABCFCNWbiHF@pinjamcluster-shard-00-00.gdsyv.mongodb.net:27017,pinjamcluster-shard-00-01.gdsyv.mongodb.net:27017,pinjamcluster-shard-00-02.gdsyv.mongodb.net:27017/PinjamCan?ssl=true&replicaSet=atlas-per5as-shard-0&authSource=admin&retryWrites=true&w=majority')
         .then(()=> {
-            app.listen(port, () => console.log(`Server is listening on ${port}, MongoDB Atlas Connected`));
+            app.listen(port, () => console.log(`Server is listening on port ${port}, MongoDB Atlas Connected`));
         })
         .catch(err => {
             console.log(err);
@@ -44,8 +29,9 @@ app.get('/testroute', (req, res) =>{
 })
 
 app.get('/', (req, res) => {
-   res.send('Welcome to pinjamcan')
+   res.send('Welcome to pinjamcan API')
 })
+
 app.use('/api/users', require('./routes/userRoutes'))
 app.use('/api/items', require('./routes/itemRoutes'))
 app.use('/api/wishlist', require('./routes/wishListRoutes'))
